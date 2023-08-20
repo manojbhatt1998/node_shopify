@@ -1,0 +1,100 @@
+//create a discount on a tag basis in Shopify by the API in node js
+
+const request = require('request');
+const express = require('express');
+const app = express();
+const Shopify = require('shopify-api-node'); // Include the Shopify API library
+
+// API credentials
+let shopifyApiKey = '2d4e3a23abb9953f8b9aee3359972dcc';
+let shopifyPassword = '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';
+let shopifyStoreName = 'yourstore.myshopify.com';
+let apiUrl = `https://${shopifyStoreName}/admin/api/2023-07`;
+const endpoint = 'products'; 
+
+// Initialize the Shopify API client with your credentials
+const shopify = new Shopify({
+  shopName: 'bhattmanoj97.myshopify.com',
+  apiKey: '2d4e3a23abb9953f8b9aee3359972dcc',
+  password: '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',
+});
+// Shopify API Headers
+const shopifyHeaders = {
+    'Content-type': 'application/json',
+    'Authorization': 'Basic ' + Buffer.from(`${shopifyApiKey}:${shopifyPassword}`).toString('base64')
+  };
+
+    // Fetch products from Shopify
+    request.get(`${apiUrl}/${endpoint}.json`, { headers: shopifyHeaders }, function (error, response, body) {
+        if (error) {
+          console.error(error);
+          res.status(500).send('An error occurred');
+          return;
+        }
+    
+        const productData = JSON.parse(body);
+        const targetTag = 'sale';
+    
+        // Filter products by tag
+        const filteredProducts = productData.products.filter(product =>
+          product.tags.includes(targetTag)
+        );
+         //console.log(filteredProducts);
+        // Extract product IDs from filtered products
+        const productIds = filteredProducts.map(product => product.id);
+        console.log(productIds);
+       
+
+        (async () => {
+            try {
+              // Create a price rule object with the existing price rule ID
+              const price_rule_id = 1210894319831;
+          
+              // Update the price rule's title and apply to specific product IDs
+              const updatedPriceRule = await shopify.priceRule.update(price_rule_id, {
+                title: '10% off sale_tag',
+                entitled_product_ids: productIds, 
+                target: {
+                  target_type: 'specific_products'
+                }
+              });
+          
+              console.log('Price rule updated successfully:', updatedPriceRule);
+            } catch (error) {
+              console.error('Error:', error);
+            }
+          })();
+          
+      });
+
+
+// id: 1210894319831,
+//   value_type: 'percentage',       
+//   value: '-10.0',
+//   customer_selection: 'all',
+//   target_type: 'line_item',
+//   target_selection: 'entitled',
+//   allocation_method: 'across',
+//   allocation_limit: null,
+//   once_per_customer: true,
+//   usage_limit: 1,
+//   starts_at: '2022-12-26T15:18:23+05:30',
+//   ends_at: '2023-08-27T23:59:59+05:30',
+//   created_at: '2022-12-26T15:19:30+05:30',
+//   updated_at: '2023-08-20T20:41:23+05:30',
+//   entitled_product_ids: [ 7755592925399 ],
+//   entitled_variant_ids: [],
+//   entitled_collection_ids: [],
+//   entitled_country_ids: [],
+//   prerequisite_product_ids: [],
+//   prerequisite_variant_ids: [],
+//   prerequisite_collection_ids: [],
+//   customer_segment_prerequisite_ids: [],
+//   prerequisite_customer_ids: [],
+//   prerequisite_subtotal_range: null,
+//   prerequisite_quantity_range: null,
+//   prerequisite_shipping_price_range: null,
+//   prerequisite_to_entitlement_quantity_ratio: { prerequisite_quantity: null, entitled_quantity: null },
+//   prerequisite_to_entitlement_purchase: { prerequisite_amount: null },
+//   title: '10% off sale_tag',
+//   admin_graphql_api_id: 'gid://shopify/PriceRule/1210894319831'
